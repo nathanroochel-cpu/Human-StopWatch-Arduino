@@ -1,69 +1,73 @@
-# Prerequisites
-*.d
+#include <LiquidCrystal.h>
 
-# Compiled Object files
-*.slo
-*.lo
-*.o
-*.obj
+LiquidCrystal lcd(7, 8, 9, 10, 11, 12);
 
-# Precompiled Headers
-*.gch
-*.pch
+#define button 2
 
-# Linker files
-*.ilk
+bool running = false;
 
-# Debugger Files
-*.pdb
+unsigned long startTime = 0;
+unsigned long currentTime = 0;
 
-# Compiled Dynamic libraries
-*.so
-*.dylib
-*.dll
-*.so.*
+// debounce variables
+bool buttonState = HIGH;
+bool lastReading = HIGH;
+unsigned long lastDebounceTime = 0;
+const unsigned long debounceDelay = 50;
 
+void setup() {
+  pinMode(button, INPUT_PULLUP);
 
-# Fortran module files
-*.mod
-*.smod
+  lcd.begin(16, 2);
+  lcd.print("Press Start");
+}
 
-# Compiled Static libraries
-*.lai
-*.la
-*.a
-*.lib
+void loop() {
 
-# Executables
-*.exe
-*.out
-*.app
+  bool reading = digitalRead(button);
 
-# Build directories
-build/
-Build/
-build-*/
+  // debounce filter
+  if (reading != lastReading) {
+    lastDebounceTime = millis();
+  }
 
-# CMake generated files
-CMakeFiles/
-CMakeCache.txt
-cmake_install.cmake
-Makefile
-install_manifest.txt
-compile_commands.json
+  if (millis() - lastDebounceTime > debounceDelay) {
 
-# Temporary files
-*.tmp
-*.log
-*.bak
-*.swp
+    // only act if stable state changed
+    if (reading != buttonState) {
+      buttonState = reading;
 
-# vcpkg
-vcpkg_installed/
+      // button PRESS event (LOW because pullup)
+      if (buttonState == LOW) {
 
-# debug information files
-*.dwo
+        if (!running) {
+          running = true;
+          startTime = millis();
 
-# test output & cache
-Testing/
-.cache/
+          lcd.clear();
+          lcd.print("Go!");
+        }
+        else {
+          running = false;
+
+          lcd.clear();
+          lcd.print("Final:");
+          lcd.setCursor(0,1);
+          lcd.print((millis() - startTime) / 1000.0);
+        }
+      }
+    }
+  }
+
+  lastReading = reading;
+
+  // live timer
+  if (running) {
+    currentTime = millis() - startTime;
+
+    lcd.setCursor(0, 0);
+    lcd.print("Time: ");
+    lcd.print(currentTime / 1000.0);
+    lcd.print("   ");
+  }
+}
